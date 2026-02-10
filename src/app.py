@@ -1,6 +1,6 @@
 
-def main():
-    print("Hello enterprise Git")
-    
+def main(name="World"):
+    print(f"Hello {name}!")
+
 if __name__ == "__main__":
     main()
