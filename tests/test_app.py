@@ -1,6 +1,7 @@
 from src.app import main
 import datetime
 
+
 def test_main(monkeypatch):
     # Simulate user input for the name
     monkeypatch.setattr("builtins.input", lambda _: "Alice")
