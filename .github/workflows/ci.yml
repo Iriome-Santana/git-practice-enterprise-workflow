@@ -1,0 +1,125 @@
+# Nombre del workflow que aparecerá en GitHub
+name: CI Pipeline
+
+# Cuándo se ejecuta este workflow
+on:
+  # Se ejecuta en cada Pull Request a main
+  pull_request:
+    branches: [ main ]
+  
+  # También se ejecuta cuando haces push directo a main (después del merge)
+  push:
+    branches: [ main ]
+
+# Define los trabajos (jobs) que se ejecutarán
+jobs:
+  # Job 1: Tests
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest  # Máquina virtual donde corre
+    
+    strategy:
+      matrix:
+        # Prueba en múltiples versiones de Python (opcional pero pro)
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+      # Paso 1: Descargar el código del repositorio
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Paso 2: Instalar Python
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      # Paso 3: Cachear dependencias (hace los builds más rápidos)
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      # Paso 4: Instalar dependencias
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -r requirements.txt
+      
+      # Paso 5: Correr los tests con cobertura
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v --cov=src --cov-report=xml --cov-report=term
+        # -v: verbose (muestra detalles)
+        # --cov=src: mide cobertura del directorio src
+        # --cov-report=xml: genera reporte XML
+        # --cov-report=term: muestra resultado en terminal
+      
+      # Paso 6: Subir reporte de cobertura a Codecov (opcional pero pro)
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false  # No fallar si Codecov tiene problemas
+        if: matrix.python-version == '3.11'  # Solo una vez, no en todas las versiones
+
+  # Job 2: Linting (calidad de código)
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 mypy
+      
+      # Black: Verifica que el código esté formateado
+      - name: Check code formatting with Black
+        run: black --check src/ tests/
+        # --check: solo verifica, no modifica archivos
+      
+      # Flake8: Detecta errores de estilo y bugs
+      - name: Lint with Flake8
+        run: flake8 src/ tests/ --max-line-length=88 --extend-ignore=E203
+        # --max-line-length=88: compatible con Black
+        # --extend-ignore=E203: ignora conflicto conocido con Black
+      
+      # MyPy: Verifica tipos
+      - name: Type check with MyPy
+        run: mypy src/ --ignore-missing-imports
+        # --ignore-missing-imports: no falla si falta tipado en librerías externas
+
+  # Job 3: Security check (opcional pero muy pro)
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install safety
+        run: pip install safety
+      
+      # Safety: busca vulnerabilidades en dependencias
+      - name: Check for security vulnerabilities
+        run: safety check --json || true
+        # || true: no falla el build si hay warnings (opcional)

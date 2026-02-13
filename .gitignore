@@ -1,2 +1,10 @@
- __pycache__/
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.pytest_cache/
+htmlcov/
+.coverage
 
+coverage.xml
