@@ -1,8 +1,8 @@
-def greet(name: str) -> str:
+def greet(name: str) -> None:
     print(f"Hello {name}!")
 
 
-def main():
+def main() -> None:
     name = input("What is your name? ")
     greet(name)
 
