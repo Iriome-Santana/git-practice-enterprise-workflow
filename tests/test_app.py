@@ -1,5 +1,5 @@
 from src.app import main
-
+import datetime
 
 def test_main(monkeypatch):
     # Simulate user input for the name
@@ -18,7 +18,8 @@ def test_main(monkeypatch):
     sys.stdout = sys.__stdout__
 
     # Check if the output is correct
-    assert captured_output.getvalue() == "Hello Alice!\n"
+    expected_output = f"Hello Alice! Today is {datetime.date.today()}.\n"
+    assert captured_output.getvalue() == expected_output
 
 
 def test_placeholder():
